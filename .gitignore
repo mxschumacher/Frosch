@@ -1,6 +1,5 @@
 # Created by .gitignore support plugin (hsz.mobi)
 .idea/
-gulpfile.js
 node_modules/
 npm-debug.log
 phaser-examples/
