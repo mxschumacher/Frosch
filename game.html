@@ -1,13 +1,39 @@
 <!doctype html>
-<html>
+<html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <title>hello phaser!</title>
-        <script src="get_started/phaser.min.js"></script>
+        <title>Frosch</title>
+        <link href="main.css" type="text/css" rel="stylesheet">
     </head>
+
     <body>
 
-    <script type="text/javascript" src="game.js"></script>
+    <header>
+        <nav>
+            <div>
+                <button>
+                    Frosch
+                </button>
+                <button>Github</button>
+                <button>Wot?</button>
+            </div>
+        </nav>
+    </header>
+    <div id="main">
+        <h1>Welcome to Frosch, a JS implementation of Frogger</h1>
+    </div>
 
+
+
+
+    <canvas id="Frosch" width="500" height="800">
+        Your browser does not support HTML5, please upgrade. Firefox & Chrome recommended.
+    </canvas>
+    <footer>
+
+    </footer>
+    <script src="game.js"></script>
+    <!-- testing for browser support -->
+    <script src="modernizr.js"></script>
     </body>
 </html>

@@ -1,5 +1,21 @@
-var gulp = require('gulp'),
-	connect = require('gulp-connect');
+var gulp = require('gulp');
+var connect = require('gulp-connect');
+var browserSync = require('browser-sync');
+
+// Static server
+gulp.task('browser-sync', function() {
+	browserSync({
+		server: {
+			baseDir: "./"
+		}
+	});
+});
+
+gulp.task('browser-sync', function() {
+	browserSync({
+		proxy: "http://localhost:8080/"
+	});
+});
 
 gulp.task('webserver', function() {
 	connect.server({
