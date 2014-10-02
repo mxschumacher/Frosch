@@ -1,14 +1,8 @@
-Frosch
+Frosch - A HTML5/JS implementation of Frogger.
+
 ======
 
-A HTML5/JS implementation of Frogger.
+Start in development by executing "gulp"
 
-To Do:
 
-add browsersync capabiltiy
-add gameplay
-add sounds
-add music/soundtrack
-add testing
-Build full website for the game.
 

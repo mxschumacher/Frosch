@@ -1,4 +1,5 @@
-//Game setup
+
+//Game setup + End of Udacity materials
 
 var canvas = document.getElementById('Frosch');
 var co = canvas.getContext('2d'); // co instead of context!
