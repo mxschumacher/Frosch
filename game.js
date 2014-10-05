@@ -1,11 +1,15 @@
-var game = new Phaser.Game(800, 900, Phaser.AUTO, 'game',
+var gameWidth = 600; //build for 800, actual screen-size via scaling..
+var gameHeight = gameWidth * 2;
+var scalingFactor = gameWidth/800;
+
+var game = new Phaser.Game(gameWidth, gameHeight, Phaser.AUTO, 'game',
 	{ preload: preload,
 	  create: create,
-	  update: update,
-	  render: render}, true);
+	  update: update },
+	  true);
 
 var player;
-var enemies;
+var enemies = {};
 var cursors;
 var body;
 var gems;
@@ -14,12 +18,12 @@ var scoreText;
 var world;
 var timeRemaining = 60;
 var lives = 5;
+var bot;
+var layer = 1;
 
 function preload() {
 
-	//solve this with sprite / atlas for cleaner code and more performance.
-
-	game.load.image('frog','images/char-boy.png'); //preliminary image, main character
+	game.load.image('frog','images/char-cat-girl.png'); //preliminary image, main character
 	game.load.image('truckBug','images/enemy-bug.png'); //kills on collision, mortal enemy.
 	game.load.image('orangeGem','images/Gem Orange.png'); //goodies for the frog
 	game.load.image('grass','images/grass-block.png');
@@ -27,141 +31,150 @@ function preload() {
 	game.load.image('stone','images/stone-block.png'); //for the starting point
 	game.load.image('blockRock','images/Rock.png'); //variation of the game -> blocks the way.
 	game.load.image('water','images/water-block.png');
-
-	/**
-	 still needed: more enemies on land
-	 enemies in the water,
-	 lilypads(goals)
-	 objects/creatures to float on
-	 */
-
-	//game.load.spritesheet('','', x,y); can be used to open a spritesheet
+	game.load.image('lilypad','images/Selector.png');
+	game.load.atlasJSONHash('bot', 'images/running_bot.png', 'images/running_bot.json');
 }
 
 function create() {
 
-	//the world
-
-	worldCreator(200, 'grass');
-	worldCreator(300, 'water');
-	worldCreator(400, 'water');
-	worldCreator(500, 'grass');
-	worldCreator(600, 'water');
-	worldCreator(700, 'water');
-	worldCreator(800, 'stone');
-
-	//What other physics engines could be more appropriate?
-
 	game.physics.startSystem(Phaser.Physics.ARCADE);
 
-	//groups can be used to check collision between them.
+	// Creation of the map
 
-	world = game.add.group();
-	world.enableBody = true ; //objects within platforms have physics enabled.
+	portionYStart = gameHeight * 0.07;
+	terrain = ['lilypad','grass', 'water', 'water', 'grass', 'stone', 'stone', 'grass', 'water', 'water', 'stone'];
 
-	scoreText = game.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#000' });
-	timeRemaining = game.add.text(250, 16, 'Time remaining: 60', { fontSize: '32px', fill: '#000' });
+	for (layer; layer <=12; layer++) {
 
-	//how to create several of those?
+		var positionY = portionYStart + 65 * layer;
+		var element = terrain[layer - 1];
 
-	var rockBarrier = world.create(500,475, 'blockRock');
-	rockBarrier.body.immovable = true;
+		worldCreator(positionY, element, layer);
 
-	function worldCreator(positiony, element) {
+	}
 
-		var i = 0;
-		x = 0;
+	function worldCreator(positionY, element, layer) {
 
-		for ( i; i<=7 ;i++ ) {
-			game.add.sprite(x, positiony, element);
-			x = x + 100;
+		var loopCounter = 0;
+		var positionX = 0;
+
+		var widthOfOneTile = gameWidth / 8;
+		var scalingfactorOfTiles = widthOfOneTile / 101;
+
+		for (loopCounter; loopCounter <= 7; loopCounter++) {
+
+			var piece = game.add.sprite(positionX, positionY, element);
+			piece.scale.set(scalingfactorOfTiles);
+			positionX = positionX + widthOfOneTile;
+
+			if ((layer == 5 || layer ==8) && loopCounter == 7) {
+				randomRockPlacer(positionY, layer);
+			}
+		}
+
+		function randomRockPlacer(positionY) {
+
+			world = game.add.group();
+			world.enableBody = true;
+			var rockBarrier = world.create(game.world.randomX, positionY, 'blockRock');
+			rockBarrier.scale.set(scalingFactor);
+			rockBarrier.body.immovable = true;
+
 		}
 	}
 
+	RandomGemPlacer();
 
+	function RandomGemPlacer() {
+
+		gems = game.add.group();
+		gems.enabledBody = true;
+
+		var gem = gems.create(game.world.randomX, game.world.randomY, 'orangeGem');
+		gem.scale.set(scalingFactor * 0.8);
+	}
+
+	game.physics.startSystem(Phaser.Physics.ARCADE);
+
+	scoreText = game.add.text(16, 16, 'score: 0', {fontSize: '32px', fill: '#000'});
+	timeRemaining = game.add.text(250, 16, 'Time remaining: 60', {fontSize: '32px', fill: '#000'});
 
 	//the player
 
-	player = game.add.sprite(350,750,'frog');
+	player = game.add.sprite(350, 750, 'frog');
+	player.scale.set(scalingFactor);
 	game.physics.arcade.enable(player);
 	player.body.collideWorldBounds = true;
 
 	//frog lives
 
-	var i = 0;
-	var heartx = 680;
+	var heartLoops = 0;
+	var heartx = 0.65 * gameWidth;
 
-	for ( i; i < lives; i++ ) {
+	for (heartLoops; heartLoops < lives; heartLoops++) {
 
 		displayLives(heartx);
-		heartx = heartx - 70;
+		heartx = heartx - 50;
 	}
 
-	function displayLives (heartx) {
-		game.add.sprite(heartx, 100, 'heart');
+	function displayLives(heartx) {
+		heart = game.add.sprite(heartx, 100, 'heart');
+		heart.scale.set(scalingFactor * 0.7);
+
 	}
 
-	//appropriate jumping sprite needed. 'jump is the name of the animation.'
-	//player.animations.add('jump',[0,1,2,3], 4, true);
+	//ROBOTATTACK!!!
 
-	//the enemies
+	enemyBotCreator(400, 'bot', 200, 'right');
+	enemyCreator(300, 'truckBug', 300, 'left');
+	game.physics.arcade.enable(enemies);
 
-	var enemy1 = game.add.sprite(900, 300, 'truckBug');
-	var enemy2 = game.add.sprite(900, 400, 'truckBug');
-	var enemy3 = game.add.sprite(-100, 600, 'truckBug');
-	var enemy4 = game.add.sprite(-100, 700, 'truckBug');
+	function enemyBotCreator(layer, enemy, speed, spawnside) {
 
-	game.physics.enable(enemy1, Phaser.Physics.ARCADE);
-	game.physics.enable(enemy2, Phaser.Physics.ARCADE);
-	game.physics.enable(enemy3, Phaser.Physics.ARCADE);
-	game.physics.enable(enemy4, Phaser.Physics.ARCADE);
+		if (spawnside == 'right') {
+			game.add.sprite(gameWidth + 100, layer, enemy);
+			enemies.body.velocity.x = -speed;
+			enemies.animations.add('run');
+			enemies.animations.play('run', 15, true);
+		}
+		else {
+			game.add.sprite(-100, layer, enemy);
+			enemies.body.velocity.x = speed;
+			enemies.animations.add('run');
+			enemies.animations.play('run', 15, true);
+		}
 
-	enemy1.body.velocity.x=-150;
-	enemy2.body.velocity.x=-150;
-	enemy3.body.velocity.x=150;
-	enemy4.body.velocity.x=150;
+		enemies.scale.set(scalingFactor);
+	}
 
-	//game controls
+	function enemyCreator(layer, enemy, speed, spawnside) {
 
-	cursors = game.input.keyboard.createCursorKeys();
+		if (spawnside == 'right') {
+			enemies = game.add.sprite(gameWidth + 100, layer, enemy);
+			enemies.body.velocity.x = -speed;
+		}
+		else {
+			enemies = game.add.sprite(-100, layer, speed, enemy);
+			enemies.body.velocity.x = speed;
+		}
 
-	//collect the gem.
-
-	gems = game.add.group();
-	gems.enabledBody  = true;
-	var gem = gems.create(200, 475, 'orangeGem');
-
+		enemies.scale.set(scalingFactor);
+	}
 }
-
-//The update function is called by the core game loop every frame
-
-var movingVelocity = 250;
 
 function update() {
 
-	//timeRemaining = timeRemaining - 1;
-
-	//checking for collisions (all members of the world-group)
-
-	game.physics.arcade.collide(player, world);
-	game.physics.arcade.collide(player, enemies);
-	game.physics.arcade.collide(player, gems);
-
-	game.physics.arcade.overlap(player, gems, collectGem, null, this);
-
-	//this resets the frog in every cycle
+	cursors = game.input.keyboard.createCursorKeys();
+	var movingVelocity = 250;
 
 	player.body.velocity.x = 0;
 	player.body.velocity.y = 0;
 
-	//moving & velocity
-
 	if (cursors.left.isDown) {
 
 		player.body.velocity.x = -movingVelocity;
-
-		//here's the code for the missing animation
 		//player.animations.play('jump');
+
 	} else if (cursors.right.isDown) {
 
 		player.body.velocity.x = movingVelocity;
@@ -179,22 +192,20 @@ function update() {
 	} else {
 
 		player.animations.stop();
-		player.frame = 4; // What does this do?
 	}
 
-}
-function collectGem(player, gem) {
+	game.physics.arcade.collide(player, world);
+	game.physics.arcade.collide(player, enemies);
+	game.physics.arcade.collide(player, gems);
 
-	gem.kill();
+	game.physics.arcade.overlap(player, gems, collectGem); //where are player and gems defined?
 
-	//  Add and update the score
+	function collectGem(player, gems) {
 
-	score += 100;
-	scoreText.text = 'Score: ' + score;
-}
+		gems.kill();
 
-function render () {
-
-	game.debug.inputInfo(60, 60);
+		score += 100;
+		scoreText.text = 'Score: ' + score;
+	}
 
 }
