@@ -197,8 +197,12 @@ var gameState = [
 			var loop = game.time.events.loop(Phaser.Timer.SECOND, updateCounter, this);
 
 			function updateCounter() {
+				if (timeRemaining > 0) {
+					timeRemaining -= 1;
+				} else {
+					// gameOver();
+				}
 
-				timeRemaining -= 1;
 				timeRemainingText.text = 'Time ' + timeRemaining;
 			}
 
@@ -331,7 +335,6 @@ var gameState = [
 
 			level += 1;
 			levelText.text = 'Level: ' + level;
-			create.levelStarter(level);
 		}
 	}
 })();
