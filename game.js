@@ -1,6 +1,6 @@
 (function() {
 
-	var gameWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0) / 2;
+	var gameWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0) / 2.5;
 	var gameHeight = gameWidth * 1.25;
 	var scalingFactor = gameWidth / 800; //build for 800px width, actual screen-size via scaling
 
@@ -18,39 +18,49 @@
 		gems,
 		score = 0,
 		scoreText,
+		levelText,
+		timeRemainingText,
 		world,
 		timeRemaining = 60,
 		lives = 5,
+		level = 1,
 		bot,
+		lilypads,
 		lane = 0;
 
-	levels = {
-		one: {
-			speed: 0.1 * gameWidth,
-			enemies: [bug],
-			gems: [yellow ]
-		},
-		two: {
-			speed: 0.15 * gameWidth,
-			enemies: [bug, bot],
-			gems: [yellow, blue]
-		},
-		three: {
-			speed: 0.2 * gameWidth,
-			enemies: [bug, bot, mummy],
-			gems: [yellow, blue, green ]
-		},
-		four: {
-			speed: 0.25 * gameWidth,
-			enemies: [bug, bot, mummy],
-			gems: [yellow, blue, green ]
-		},
-		five: {
-			speed: 0.3 * gameWidth,
-			enemies: [bug, bot, mummy],
-			gems: [yellow, blue, green]
-		}
-	};
+
+var gameState = [
+	{
+	speed: 0.1 * gameWidth,
+	enemies: ['truckBug'],
+	gems: ['orangeGem'],
+	BlockRocks: false,
+	spawnFrequency: 5000},
+	{
+	speed: 0.15 * gameWidth,
+	enemies: ['truckBug', 'bot'],
+	gems: ['orangeGem'],
+	BlockRocks: false,
+	spawnFrequency: 4000},
+	{
+	speed: 0.2 * gameWidth,
+	enemies: ['truckBug', 'bot', 'mummy'],
+	gems: ['orangeGem', 'blueGem', 'greenGem' ],
+	BlockRocks: true,
+	spawnFrequency: 3000},
+	{
+	speed: 0.25 * gameWidth,
+	enemies: ['truckBug', 'bot', 'mummy'],
+	gems: ['orangeGem', 'blueGem', 'greenGem' ],
+	BlockRocks: true,
+	spawnFrequency: 2000},
+	{
+	speed: 0.3 * gameWidth,
+	enemies: ['truckBug', 'bot', 'mummy'],
+	gems: ['orangeGem', 'blueGem', 'greenGem'],
+	BlockRocks: true,
+	spawnFrequency: 1000}
+	];
 
 	function preload() {
 
@@ -69,66 +79,128 @@
 		game.load.atlasJSONHash('bot', 'images/running_bot.png', 'images/running_bot.json');
 	}
 
+
 	function create() {
 
 		game.physics.startSystem(Phaser.Physics.ARCADE);
 
-		portionYStart = gameHeight * 0.02;
+		levelStarter(level);
 
-		terrain = ['lilypad', 'grass', 'water', 'water', 'grass', 'stone', 'stone', 'grass', 'water', 'water', 'stone'];
+		function levelStarter(level) {
 
-		for (lane; lane <= 12; lane++) {
+			portionYStart = gameHeight * 0.02;
 
-			var positionY = portionYStart + (85 * scalingFactor) * lane;
-			var element = terrain[lane];
+			terrain = ['lilypad', 'grass', 'water', 'water', 'grass', 'stone', 'stone', 'grass', 'water', 'water', 'stone'];
 
-			worldCreator(positionY, element, lane);
-		}
+			for (lane; lane <= 12; lane++) {
 
-		function worldCreator(positionY, element, lane) {
+				var positionY = portionYStart + (85 * scalingFactor) * lane; //fixed value of 85 does not work!
+				var element = terrain[lane];
+				var enemyLanesYCoordinates = [];
 
-			var loopCounter = 0;
-			var positionX = 0;
+				if (element != "lilypad") {
+					worldCreator(positionY, element, lane);
+				} else {
+					lilypadCreator(positionY, element, lane);
+				}
 
-			var widthOfOneTile = gameWidth / 8;
+				//var enemyLanes = [3,4,7,10];
 
-			var scalingfactorOfTiles = widthOfOneTile / 101;
+				//if (lane in enemyLanes) {
 
-			for (loopCounter; loopCounter <= 7; loopCounter++) {
-
-				var piece = game.add.sprite(positionX, positionY, element);
-				piece.scale.set(scalingfactorOfTiles);
-				positionX = positionX + widthOfOneTile;
-
-				if ((lane == 5 || lane == 8) && loopCounter == 7) {
-					randomRockPlacer(positionY);
+				if (lane == 3 || lane == 4 || lane == 7 || lane == 10) {
+					console.log("I get triggered, current value of lane: " + lane);
+					console.log("The value of positionY is: " + positionY);
+					enemyLanesYCoordinates.push(positionY);
 				}
 			}
 
-			randomRockPlacer = function (positionY) {
+			function worldCreator(positionY, element, lane) {
 
-				world = game.add.group();
-				world.enableBody = true;
-				var rockBarrier = world.create(game.world.randomX, positionY - 0.02 * gameHeight, 'blockRock');
-				rockBarrier.scale.set(scalingFactor);
-				rockBarrier.body.immovable = true;
+				var loopCounter = 0;
+				var positionX = 0;
+
+				var widthOfOneTile = gameWidth / 8;
+
+				var scalingfactorOfTiles = widthOfOneTile / 101;
+
+				for (loopCounter; loopCounter <= 7; loopCounter++) {
+
+					var piece = game.add.sprite(positionX, positionY, element);
+					piece.scale.set(scalingfactorOfTiles);
+					positionX = positionX + widthOfOneTile;
+
+					if ((lane == 5 || lane == 8) && loopCounter == 7) {
+						randomRockPlacer(positionY);
+					}
+					if ((lane = 4 || lane == 7) && loopCounter == 7) {
+						enemyCreator(gameState[level][enemies]);
+					}
+				}
+
+				if (gameState[level]["BlockRocks"] == true) {
+
+					randomRockPlacer = function (positionY) {
+
+						world = game.add.group();
+						world.enableBody = true;
+						var rockBarrier = world.create(game.world.randomX, positionY, 'blockRock');
+						rockBarrier.scale.set(scalingFactor);
+						rockBarrier.body.immovable = true;
+
+					}
+
+				}
+				randomRockPlacer = function (positionY) {
+				}
+			}
+
+			function lilypadCreator() {
+
+				var loopCounter = 0;
+				var positionX = 0;
+
+				var widthOfOneTile = gameWidth / 8;
+
+				var scalingfactorOfTiles = widthOfOneTile / 101;
+
+				lilypads = game.add.group();
+				lilypads.enabledBody = true;
+
+				for (loopCounter; loopCounter <= 7; loopCounter++) {
+
+					var lilypad = lilypads.create(positionX, positionY, element);
+
+					lilypad.scale.set(scalingfactorOfTiles);
+					positionX = positionX + widthOfOneTile;
+
+				}
+			}
+
+			RandomGemPlacer();
+
+			function RandomGemPlacer() {
+
+				gems = game.add.group();
+				gems.enabledBody = true;
+
+				var gem = gems.create(game.world.randomX, game.world.randomY, 'orangeGem');
+				gem.scale.set(scalingFactor * 0.8);
 
 			}
-		}
-
-
-		RandomGemPlacer();
-
-		function RandomGemPlacer() {
-
-			gems = game.add.group();
-			gems.enabledBody = true;
-
-			var gem = gems.create(game.world.randomX, game.world.randomY, 'orangeGem');
-			gem.scale.set(scalingFactor * 0.8);
 
 			scoreText = game.add.text(16, 16, 'score: 0', {fontSize: '32px', fill: '#000'});
-			timeRemaining = game.add.text(250, 16, 'Time remaining: 60', {fontSize: '32px', fill: '#000'});
+			levelText = game.add.text(16, 40, 'level: 1', {fontSize: '32px', fill: '#000'});
+
+			timeRemainingText = game.add.text(16, 70, 'Time ' + timeRemaining, {fontSize: '32px', fill: '#000'});
+
+			var loop = game.time.events.loop(Phaser.Timer.SECOND, updateCounter, this);
+
+			function updateCounter() {
+
+				timeRemaining -= 1;
+				timeRemainingText.text = 'Time ' + timeRemaining;
+			}
 
 			//the player
 
@@ -140,7 +212,7 @@
 			//frog lives
 
 			var heartLoops = 0;
-			var heartx = 0.8 * gameWidth;
+			var heartx = 0.87 * gameWidth;
 
 			for (heartLoops; heartLoops < lives; heartLoops++) {
 
@@ -149,54 +221,55 @@
 			}
 
 			function displayLives(heartx) {
-				heart = game.add.sprite(heartx, 100, 'heart');
+				heart = game.add.sprite(heartx, 5, 'heart');
 				heart.scale.set(scalingFactor * 0.7);
 
 			}
 
-		}
+			console.log("The enemyLanesYCoordinate-array in full: " + enemyLanesYCoordinates);
+			enemyCreator(enemyLanesYCoordinates[0], gameState[level]['enemies'][0], gameState[level]['speed'], 'left');
+			console.log("Value of first position in array " + enemyLanesYCoordinates[0]);
+			enemyCreator(enemyLanesYCoordinates[1], gameState[level]['enemies'][1], gameState[level]['speed'], 'right');
+			console.log(enemyLanesYCoordinates[1]);
+			enemyCreator(enemyLanesYCoordinates[2], gameState[level]['enemies'][1], gameState[level]['speed'], 'left');
+			enemyCreator(enemyLanesYCoordinates[3], gameState[level]['enemies'][0], gameState[level]['speed'], 'right');
 
-		enemyCreator(300, 'truckBug', 100, 'left');
-		enemyCreator(100, 'truckBug', 100, 'right');
-		enemyCreator(400, 'bot', 100, 'left');
-		enemyCreator(150, 'bot', 100, 'right');
+			function enemyCreator(positionY, enemy, speed, spawnside) {
 
-		function enemyCreator(layer, enemy, speed, spawnside) {
-
-			enemies = game.add.group();
-			enemies.enableBody = true;
+				enemies = game.add.group();
+				enemies.enableBody = true;
 
 				if (spawnside == 'right') {
 
-					var rightAttacker = enemies.create((gameWidth + 100), layer, enemy);
+					var rightAttacker = enemies.create((gameWidth + 100), positionY, enemy);
 					rightAttacker.enabledBody = true;
 					rightAttacker.body.velocity.x = -speed;
 					rightAttacker.scale.set(scalingFactor);
 
-
-
 					if (enemy == 'bot') {
-						botAnimator();
+						botAnimator(rightAttacker);
 					}
+
 				} else {
 
-					var leftAttacker = enemies.create(-100, layer, enemy);
+					var leftAttacker = enemies.create(-100, positionY, enemy);
 					leftAttacker.enabledBody = true;
 					leftAttacker.body.velocity.x = speed;
 					leftAttacker.scale.set(scalingFactor);
 
 					if (enemy == 'bot') {
-						botAnimator();
+
+						botAnimator(leftAttacker);
 					}
 				}
-		}
+			}
 
-		function botAnimator() {
-			enemies.animations.add('run');
-			enemies.animations.play('run', 15, true);
+			function botAnimator(Attacker) {
+				Attacker.animations.add('run');
+				Attacker.animations.play('run', 15, true);
+			}
 		}
-		}
-
+	}
 	function update() {
 
 		//player controls
@@ -237,6 +310,10 @@
 		game.physics.arcade.enable(gems);
 		game.physics.arcade.overlap(player, gems, collectGem);
 
+
+		game.physics.arcade.enable(lilypads);
+		game.physics.arcade.overlap(player, lilypads, levelSuccess);
+
 		function collectGem(player, gems) {
 
 			gems.kill();
@@ -250,5 +327,11 @@
 			lives -= 1;
 		}
 
+		function levelSuccess(player, lilypads) {
+
+			level += 1;
+			levelText.text = 'Level: ' + level;
+			create.levelStarter(level);
+		}
 	}
 })();
